@@ -1,0 +1,3 @@
+Invitation Email
+
+http://{{ site.domain }}{{ invitation.get_absolute_url }}

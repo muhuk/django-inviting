@@ -1,0 +1,67 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: django-invitation\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2009-10-13 09:48-0500\n"
+"PO-Revision-Date: 2009-10-13 17:47+0200\n"
+"Last-Translator: Atamert Ölçgen <muhuk@muhuk.com>\n"
+"Language-Team: muhuk <muhuk@muhuk.com>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-Language: Turkish\n"
+
+#: models.py:55
+msgid "e-mail"
+msgstr "e-posta"
+
+#: models.py:56
+msgid "invitation key"
+msgstr "davetiye kodu"
+
+#: models.py:57
+msgid "date invited"
+msgstr "davet edildilği tarih"
+
+#: models.py:63
+msgid "invitation"
+msgstr "davetiye"
+
+#: models.py:64
+msgid "invitations"
+msgstr "davetiyeler"
+
+#: models.py:68
+#, python-format
+msgid "%(username)s invited %(email)s on %(date)s"
+msgstr "%(username)s, %(email)s'i %(date)s tarihinde davet etti"
+
+#: models.py:87
+msgid "expiration date"
+msgstr "son kullanma tarihi"
+
+#: models.py:131
+msgid "available invitations"
+msgstr "kullanılabilir davetiyeler"
+
+#: models.py:133
+msgid "invitations sent"
+msgstr "gönderilmiş davetiyeler"
+
+#: models.py:134
+msgid "invitations accepted"
+msgstr "kabul edilmiş davetiyeler"
+
+#: models.py:139
+msgid "invitation stats"
+msgstr "davetiye istatistikleri"
+
+#: models.py:143
+#, python-format
+msgid "invitation stats for %(username)s"
+msgstr "%(username)s için davetiye istatistikleri"
