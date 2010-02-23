@@ -1,0 +1,6 @@
+*.py[oc]
+*.mo
+*.db
+cache/
+*.kdevelop
+*.kdevses
