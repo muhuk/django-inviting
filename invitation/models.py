@@ -152,7 +152,6 @@ class InvitationStats(models.Model):
         self.available = models.F('available') + count
         self.save()
         signals.invitation_added.send(sender=self, user=self.user, count=count)
-        return self.available
     add_available.alters_data = True
 
     def use(self, count=1):
@@ -163,17 +162,14 @@ class InvitationStats(models.Model):
                 raise InvitationError('No available invitations.')
         self.sent = models.F('sent') + count
         self.save()
-        return self.sent
     use.alters_data = True
 
     def mark_accepted(self, count=1):
-        if self.accepted + count <= self.sent:
-            self.accepted = models.F('accepted') + count
-            self.save()
-            return self.accepted
-        else:
+        if self.accepted + count > self.sent:
             raise InvitationError('There can\'t be more accepted ' \
                                   'invitations than sent invitations.')
+        self.accepted = models.F('accepted') + count
+        self.save()
     mark_accepted.alters_data = True
 
 
