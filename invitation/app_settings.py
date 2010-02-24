@@ -4,7 +4,8 @@ from django.utils.importlib import import_module
 
 
 EXPIRE_DAYS = getattr(settings, 'INVITATION_EXPIRE_DAYS', 15)
-INITIAL_INVITATIONS = getattr(settings, 'INITIAL_INVITATIONS', 10)
+INITIAL_INVITATIONS = getattr(settings, 'INVITATION_INITIAL_INVITATIONS', 10)
+REWARD_THRESHOLD = getattr(settings, 'INVITATION_REWARD_THRESHOLD', 0.5)
 PERFORMANCE_FUNC = getattr(settings,
                            'INVITATION_PERFORMANCE_FUNC',
                            None)

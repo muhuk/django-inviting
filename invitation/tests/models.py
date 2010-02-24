@@ -135,3 +135,14 @@ class InvitationStatsTestCase(BaseTestCase):
         InvitationStats.objects.give_invitations(self.user(),
                                                  count=lambda u: 4)
         self.assertEqual(self.stats(), (INITIAL_INVITATIONS+10, 0, 0))
+
+    def test_reward(self):
+        self.assertAlmostEqual(self.user().invitation_stats.performance, 0.0)
+        InvitationStats.objects.reward()
+        self.assertEqual(self.user().invitation_stats.available, INITIAL_INVITATIONS)
+        self.user().invitation_stats.use(INITIAL_INVITATIONS)
+        self.user().invitation_stats.mark_accepted(INITIAL_INVITATIONS)
+        InvitationStats.objects.reward()
+        invitation_stats = self.user().invitation_stats
+        self.assertEqual(invitation_stats.performance > 0.5, True)
+        self.assertEqual(invitation_stats.available, INITIAL_INVITATIONS)

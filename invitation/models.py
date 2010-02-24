@@ -8,7 +8,8 @@ from django.utils.translation import ugettext_lazy as _
 from django.utils.hashcompat import sha_constructor
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
-from app_settings import PERFORMANCE_FUNC, EXPIRE_DAYS, INITIAL_INVITATIONS
+from app_settings import PERFORMANCE_FUNC, REWARD_THRESHOLD
+from app_settings import EXPIRE_DAYS, INITIAL_INVITATIONS
 import signals
 
 
@@ -134,9 +135,16 @@ class InvitationStatsManager(models.Manager):
             qs = self.filter(user=user)
         for instance in qs:
             if callable(count):
-                instance.add_available(count(user))
+                instance.add_available(count(instance.user))
             else:
                 instance.add_available(count)
+
+    def reward(self, user=None, reward_count=INITIAL_INVITATIONS):
+        def count(user):
+            if user.invitation_stats.performance >= REWARD_THRESHOLD:
+                return reward_count
+            return 0
+        return self.give_invitations(user, count)
 
 
 class InvitationStats(models.Model):
