@@ -2,8 +2,9 @@ import datetime
 from django.core import mail
 from django.contrib.auth.models import User
 from utils import BaseTestCase
-from invitation.models import INVITATION_EXPIRE_DAYS, INITIAL_INVITATIONS
+from invitation.app_settings import EXPIRE_DAYS, INITIAL_INVITATIONS
 from invitation.models import InvitationError, Invitation, InvitationStats
+from invitation.models import default_performance_calculator
 
 
 class InvitationTestCase(BaseTestCase):
@@ -18,7 +19,7 @@ class InvitationTestCase(BaseTestCase):
     def make_invalid(self, invitation=None):
         invitation = invitation or self.invitation
         invitation.date_invited = datetime.datetime.now() - \
-                                 datetime.timedelta(INVITATION_EXPIRE_DAYS+10)
+                                 datetime.timedelta(EXPIRE_DAYS+10)
         invitation.save()
         return invitation
 
@@ -75,6 +76,21 @@ class InvitationStatsTestCase(BaseTestCase):
         return (user.invitation_stats.available,
                 user.invitation_stats.sent,
                 user.invitation_stats.accepted)
+
+    class MockInvitationStats(object):
+        def __init__(self, available, sent, accepted):
+            self.available = available
+            self.sent = sent
+            self.accepted = accepted
+
+    def test_default_performance_func(self):
+        self.assertAlmostEqual(default_performance_calculator(
+                                     self.MockInvitationStats(5, 5, 1)), 0.42)
+        self.assertAlmostEqual(default_performance_calculator(
+                                     self.MockInvitationStats(0, 10, 10)), 1.0)
+        self.assertAlmostEqual(default_performance_calculator(
+                                     self.MockInvitationStats(10, 0, 0)), 0.0)
+
 
     def test_add_available(self):
         self.assertEqual(self.stats(), (INITIAL_INVITATIONS, 0, 0))

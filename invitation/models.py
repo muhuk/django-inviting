@@ -8,11 +8,21 @@ from django.utils.translation import ugettext_lazy as _
 from django.utils.hashcompat import sha_constructor
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
+from app_settings import PERFORMANCE_FUNC, EXPIRE_DAYS, INITIAL_INVITATIONS
 import signals
 
 
-INVITATION_EXPIRE_DAYS = getattr(settings, 'INVITATION_EXPIRE_DAYS', 15)
-INITIAL_INVITATIONS = getattr(settings, 'INITIAL_INVITATIONS', 10)
+def default_performance_calculator(invitation_stats):
+    total = invitation_stats.available + invitation_stats.sent
+    try:
+        send_ratio = float(invitation_stats.sent) / total
+    except ZeroDivisionError:
+        send_ratio = 0.0
+    try:
+        accept_ratio = float(invitation_stats.accepted) / invitation_stats.sent
+    except ZeroDivisionError:
+        accept_ratio = 0.0
+    return min((send_ratio + accept_ratio) * 0.6, 1.0)
 
 
 class InvitationError(Exception):
@@ -50,8 +60,7 @@ class InvitationManager(models.Manager):
         return invitation
 
     def valid(self):
-        expiration = datetime.datetime.now() - \
-                                    datetime.timedelta(INVITATION_EXPIRE_DAYS)
+        expiration = datetime.datetime.now() - datetime.timedelta(EXPIRE_DAYS)
         return self.get_query_set().filter(date_invited__gte=expiration)
 
 
@@ -82,7 +91,7 @@ class Invitation(models.Model):
 
     @property
     def _expires_at(self):
-        return self.date_invited + datetime.timedelta(INVITATION_EXPIRE_DAYS)
+        return self.date_invited + datetime.timedelta(EXPIRE_DAYS)
 
     def is_valid(self):
         return datetime.datetime.now() < self._expires_at
@@ -101,7 +110,7 @@ class Invitation(models.Model):
         subject = ''.join(subject.splitlines())
         message = render_to_string('invitation/invitation_email.txt',
                                    {'invitation': self,
-                                    'expiration_days': INVITATION_EXPIRE_DAYS,
+                                    'expiration_days': EXPIRE_DAYS,
                                     'site': site})
         send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email])
         signals.invitation_sent.send(sender=self)
@@ -147,6 +156,12 @@ class InvitationStats(models.Model):
     def __unicode__(self):
         return _(u'invitation stats for %(username)s') % {
                                                'username': self.user.username}
+
+    @property
+    def performance(self):
+        if PERFORMANCE_FUNC:
+            return PERFORMANCE_FUNC(self)
+        return default_performance_calculator(self)
 
     def add_available(self, count=1):
         self.available = models.F('available') + count
