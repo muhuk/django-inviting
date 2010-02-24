@@ -1,7 +1,7 @@
 from django.conf.urls.defaults import *
-from django.conf import settings
 from django.views.generic.simple import direct_to_template
 from django.contrib.auth.decorators import login_required
+from app_settings import INVITE_ONLY
 
 
 login_required_direct_to_template = login_required(direct_to_template)
@@ -33,7 +33,7 @@ urlpatterns = patterns('',
 )
 
 
-if getattr(settings, 'INVITE_ONLY', False):
+if INVITE_ONLY:
     urlpatterns += patterns('',
         url(r'^register/$',
             'django.views.generic.simple.redirect_to',
@@ -43,4 +43,7 @@ if getattr(settings, 'INVITE_ONLY', False):
             direct_to_template,
             {'template': 'invitation/invite_only.html'},
             name='invitation_invite_only'),
+        url(r'^invitation/reward/$',
+            'invitation.views.reward',
+            name='invitation_reward'),
     )

@@ -127,6 +127,8 @@ class Invitation(models.Model):
 
 class InvitationStatsManager(models.Manager):
     def give_invitations(self, user=None, count=None):
+        rewarded_users = 0
+        invitations_given = 0
         if not isinstance(count, int) and not callable(count):
             raise TypeError('Count must be int or callable.')
         if user is None:
@@ -135,9 +137,14 @@ class InvitationStatsManager(models.Manager):
             qs = self.filter(user=user)
         for instance in qs:
             if callable(count):
-                instance.add_available(count(instance.user))
+                c = count(instance.user)
             else:
-                instance.add_available(count)
+                c = count
+            if c:
+                instance.add_available(c)
+                rewarded_users += 1
+                invitations_given += c
+        return rewarded_users, invitations_given
 
     def reward(self, user=None, reward_count=INITIAL_INVITATIONS):
         def count(user):

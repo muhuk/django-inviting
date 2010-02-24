@@ -1,0 +1,4 @@
+{% load i18n %}
+{% if INVITE_ONLY %}<li>
+  <a href="{% url invitation_reward %}" class="addlink">{% blocktrans %}Reward users with good performance{% endblocktrans %}</a>
+</li>{% endif %}
