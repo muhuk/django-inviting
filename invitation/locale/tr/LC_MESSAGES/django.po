@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: django-invitation\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2009-10-13 09:48-0500\n"
+"POT-Creation-Date: 2010-02-25 13:36+0200\n"
 "PO-Revision-Date: 2009-10-13 17:47+0200\n"
 "Last-Translator: Atamert Ölçgen <muhuk@muhuk.com>\n"
 "Language-Team: muhuk <muhuk@muhuk.com>\n"
@@ -16,52 +16,72 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Poedit-Language: Turkish\n"
 
-#: models.py:55
+#: models.py:70
 msgid "e-mail"
 msgstr "e-posta"
 
-#: models.py:56
+#: models.py:71
 msgid "invitation key"
 msgstr "davetiye kodu"
 
-#: models.py:57
+#: models.py:72
 msgid "date invited"
 msgstr "davet edildilği tarih"
 
-#: models.py:63
+#: models.py:78
 msgid "invitation"
 msgstr "davetiye"
 
-#: models.py:64
+#: models.py:79
 msgid "invitations"
 msgstr "davetiyeler"
 
-#: models.py:68
+#: models.py:83
 #, python-format
 msgid "%(username)s invited %(email)s on %(date)s"
 msgstr "%(username)s, %(email)s'i %(date)s tarihinde davet etti"
 
-#: models.py:87
+#: models.py:102
 msgid "expiration date"
 msgstr "son kullanma tarihi"
 
-#: models.py:131
+#: models.py:160
 msgid "available invitations"
 msgstr "kullanılabilir davetiyeler"
 
-#: models.py:133
+#: models.py:162
 msgid "invitations sent"
 msgstr "gönderilmiş davetiyeler"
 
-#: models.py:134
+#: models.py:163
 msgid "invitations accepted"
 msgstr "kabul edilmiş davetiyeler"
 
-#: models.py:139
+#: models.py:168
 msgid "invitation stats"
 msgstr "davetiye istatistikleri"
 
-#: models.py:143
+#: models.py:172
 #, python-format
 msgid "invitation stats for %(username)s"
 msgstr "%(username)s için davetiye istatistikleri"
+
+#: views.py:79
+#, python-format
+msgid "%(users)s users are given a total of %(invitations)s invitations."
+msgstr "%(users)s kullanıcıya toplam %(invitations)s davetiye verildi."
+
+#: views.py:84
+msgid "No user has performance above threshold, no invitations awarded."
+msgstr ""
+"Belirlenen performans eşiğinin üstünde kullanıcı olmadığı "
+"için hiç davetiye tanımlanmadı."
+
+#: templates/admin/invitation/invitationstats/_reward_link.html:3
+msgid "Reward users with good performance"
+msgstr "Aktif kullanıcılara davetiye tanımla"
+
+#: templates/admin/invitation/invitationstats/change_list.html:10
+#, python-format
+msgid "Add %(name)s"
+msgstr "%(name)s ekle"
