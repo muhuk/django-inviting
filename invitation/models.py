@@ -140,7 +140,8 @@ class Invitation(models.Model):
         Templates used:
 
         ``invitation/invitation_email_subject.txt``
-          Template used to render the email subject. Takes the following context:
+          Template used to render the email subject.
+          Takes the following context:
 
           :invitation: ``Invitation`` instance ``send_email`` is called on.
           :site: ``Site`` instance to be used.

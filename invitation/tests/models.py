@@ -14,12 +14,12 @@ class InvitationTestCase(BaseTestCase):
         user.invitation_stats.use()
         self.invitation = Invitation.objects.create(user=user,
                                                     email=u'test@example.com',
-                                                    key=u'F'*40)
+                                                    key=u'F' * 40)
 
     def make_invalid(self, invitation=None):
         invitation = invitation or self.invitation
         invitation.date_invited = datetime.datetime.now() - \
-                                 datetime.timedelta(EXPIRE_DAYS+10)
+                                  datetime.timedelta(EXPIRE_DAYS + 10)
         invitation.save()
         return invitation
 
@@ -95,22 +95,22 @@ class InvitationStatsTestCase(BaseTestCase):
     def test_add_available(self):
         self.assertEqual(self.stats(), (INITIAL_INVITATIONS, 0, 0))
         self.user().invitation_stats.add_available()
-        self.assertEqual(self.stats(), (INITIAL_INVITATIONS+1, 0, 0))
+        self.assertEqual(self.stats(), (INITIAL_INVITATIONS + 1, 0, 0))
         self.user().invitation_stats.add_available(10)
-        self.assertEqual(self.stats(), (INITIAL_INVITATIONS+11, 0, 0))
+        self.assertEqual(self.stats(), (INITIAL_INVITATIONS + 11, 0, 0))
 
     def test_use(self):
         self.settings_manager.set(INVITATION_INVITE_ONLY=True)
         self.reset_urlconf()
         self.user().invitation_stats.add_available(10)
-        self.assertEqual(self.stats(), (INITIAL_INVITATIONS+10, 0, 0))
+        self.assertEqual(self.stats(), (INITIAL_INVITATIONS + 10, 0, 0))
         self.user().invitation_stats.use()
-        self.assertEqual(self.stats(), (INITIAL_INVITATIONS+9, 1, 0))
+        self.assertEqual(self.stats(), (INITIAL_INVITATIONS + 9, 1, 0))
         self.user().invitation_stats.use(5)
-        self.assertEqual(self.stats(), (INITIAL_INVITATIONS+4, 6, 0))
+        self.assertEqual(self.stats(), (INITIAL_INVITATIONS + 4, 6, 0))
         self.assertRaises(InvitationError,
                           self.user().invitation_stats.use,
-                          INITIAL_INVITATIONS+5)
+                          INITIAL_INVITATIONS + 5)
 
     def test_mark_accepted(self):
         if INITIAL_INVITATIONS < 10:
@@ -129,17 +129,18 @@ class InvitationStatsTestCase(BaseTestCase):
     def test_give_invitations(self):
         self.assertEqual(self.stats(), (INITIAL_INVITATIONS, 0, 0))
         InvitationStats.objects.give_invitations(count=3)
-        self.assertEqual(self.stats(), (INITIAL_INVITATIONS+3, 0, 0))
+        self.assertEqual(self.stats(), (INITIAL_INVITATIONS + 3, 0, 0))
         InvitationStats.objects.give_invitations(self.user(), count=3)
-        self.assertEqual(self.stats(), (INITIAL_INVITATIONS+6, 0, 0))
+        self.assertEqual(self.stats(), (INITIAL_INVITATIONS + 6, 0, 0))
         InvitationStats.objects.give_invitations(self.user(),
                                                  count=lambda u: 4)
-        self.assertEqual(self.stats(), (INITIAL_INVITATIONS+10, 0, 0))
+        self.assertEqual(self.stats(), (INITIAL_INVITATIONS + 10, 0, 0))
 
     def test_reward(self):
         self.assertAlmostEqual(self.user().invitation_stats.performance, 0.0)
         InvitationStats.objects.reward()
-        self.assertEqual(self.user().invitation_stats.available, INITIAL_INVITATIONS)
+        self.assertEqual(self.user().invitation_stats.available,
+                         INITIAL_INVITATIONS)
         self.user().invitation_stats.use(INITIAL_INVITATIONS)
         self.user().invitation_stats.mark_accepted(INITIAL_INVITATIONS)
         InvitationStats.objects.reward()

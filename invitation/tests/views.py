@@ -2,7 +2,7 @@ from django.core.urlresolvers import reverse
 from django.core import mail
 from django.contrib.auth.models import User
 from utils import BaseTestCase
-from invitation.models import Invitation, InvitationStats
+from invitation.models import Invitation
 from invitation import app_settings
 
 
@@ -21,7 +21,7 @@ class InvitingTestCase(BaseTestCase):
         self.assertEqual(self.user().invitation_stats.sent, 1)
 
     def test_invite_only_mode(self):
-        app_settings.INVITE_ONLY=True
+        app_settings.INVITE_ONLY = True
         self.reset_urlconf()
         available = self.user().invitation_stats.available
         self.client.login(username='testuser', password='testuser')
@@ -43,7 +43,7 @@ class InvitingTestCase(BaseTestCase):
 
 class InvitationModeTestCase(BaseTestCase):
     def test_invite_only_mode(self):
-        app_settings.INVITE_ONLY=True
+        app_settings.INVITE_ONLY = True
         self.reset_urlconf()
         # Normal registration view should redirect
         response = self.client.get(reverse('registration_register'))
@@ -54,7 +54,7 @@ class InvitationModeTestCase(BaseTestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_invite_optional_mode(self):
-        app_settings.INVITE_ONLY=False
+        app_settings.INVITE_ONLY = False
         self.reset_urlconf()
         # Normal registration view should work
         response = self.client.get(reverse('registration_register'))
@@ -63,7 +63,7 @@ class InvitationModeTestCase(BaseTestCase):
                                 'registration/registration_register.html')
         # So as registration after invitation view
         response = self.client.get(reverse('invitation_register',
-                                           args=('A'*40,)))
+                                           args=('A' * 40,)))
         self.assertEqual(response.status_code, 200)
 
 
@@ -72,7 +72,7 @@ class RegistrationTestCase(BaseTestCase):
         # Make sure error message is shown in
         # case of an invalid invitation key
         response = self.client.get(reverse('invitation_register',
-                                           args=('A'*40,)))
+                                           args=('A' * 40,)))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response,
                                 'invitation/wrong_invitation_key.html')
@@ -98,5 +98,3 @@ class RegistrationTestCase(BaseTestCase):
                           Invitation.objects.get,
                           user=self.user(),
                           email='friend@example.com')
-
-

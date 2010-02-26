@@ -76,12 +76,12 @@ def register(request,
 def reward(request):
     rewarded_users, invitations_given = InvitationStats.objects.reward()
     if rewarded_users:
-        message=ugettext(u'%(users)s users are given a total of ' \
-                         u'%(invitations)s invitations.') % {
+        message = ugettext(u'%(users)s users are given a total of ' \
+                           u'%(invitations)s invitations.') % {
                                             'users': rewarded_users,
                                             'invitations': invitations_given}
     else:
-        message=ugettext(u'No user has performance above ' \
-                         u'threshold, no invitations awarded.')
+        message = ugettext(u'No user has performance above ' \
+                           u'threshold, no invitations awarded.')
     request.user.message_set.create(message=message)
     return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))

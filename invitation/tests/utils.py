@@ -1,5 +1,4 @@
 import os
-from django.test import TestCase
 from django.core.urlresolvers import clear_url_caches
 from django.utils.importlib import import_module
 from django.contrib.auth.models import User
