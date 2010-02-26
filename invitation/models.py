@@ -9,7 +9,7 @@ from django.utils.hashcompat import sha_constructor
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from app_settings import PERFORMANCE_FUNC, REWARD_THRESHOLD
-from app_settings import EXPIRE_DAYS, INITIAL_INVITATIONS
+from app_settings import INVITE_ONLY, EXPIRE_DAYS, INITIAL_INVITATIONS
 import signals
 
 
@@ -255,7 +255,7 @@ class InvitationStats(models.Model):
         count
           Optional. Number of invitations to mark used. Default is ``1``.
         """
-        if getattr(settings, 'INVITE_ONLY', False):
+        if INVITE_ONLY:
             if self.available - count >= 0:
                 self.available = models.F('available') - count
             else:
