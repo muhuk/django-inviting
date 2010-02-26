@@ -20,7 +20,7 @@ class InvitingTestCase(BaseTestCase):
         self.assertEqual(self.user().invitation_stats.sent, 1)
 
     def test_invite_only_mode(self):
-        self.settings_manager.set(INVITE_ONLY=True)
+        self.settings_manager.set(INVITATION_INVITE_ONLY=True)
         self.reset_urlconf()
         available = self.user().invitation_stats.available
         self.client.login(username='testuser', password='testuser')
@@ -42,7 +42,7 @@ class InvitingTestCase(BaseTestCase):
 
 class InvitationModeTestCase(BaseTestCase):
     def test_invite_only_mode(self):
-        self.settings_manager.set(INVITE_ONLY=True)
+        self.settings_manager.set(INVITATION_INVITE_ONLY=True)
         self.reset_urlconf()
         # Normal registration view should redirect
         response = self.client.get(reverse('registration_register'))
@@ -53,7 +53,7 @@ class InvitationModeTestCase(BaseTestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_invite_optional_mode(self):
-        self.settings_manager.set(INVITE_ONLY=False)
+        self.settings_manager.set(INVITATION_INVITE_ONLY=False)
         self.reset_urlconf()
         # Normal registration view should work
         response = self.client.get(reverse('registration_register'))

@@ -100,7 +100,7 @@ class InvitationStatsTestCase(BaseTestCase):
         self.assertEqual(self.stats(), (INITIAL_INVITATIONS+11, 0, 0))
 
     def test_use(self):
-        self.settings_manager.set(INVITE_ONLY=True)
+        self.settings_manager.set(INVITATION_INVITE_ONLY=True)
         self.reset_urlconf()
         self.user().invitation_stats.add_available(10)
         self.assertEqual(self.stats(), (INITIAL_INVITATIONS+10, 0, 0))
