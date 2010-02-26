@@ -82,6 +82,12 @@ class InvitationManager(models.Manager):
         expiration = datetime.datetime.now() - datetime.timedelta(EXPIRE_DAYS)
         return self.get_query_set().filter(date_invited__gte=expiration)
 
+    def invalid(self):
+        """Filter invalid invitation.
+        """
+        expiration = datetime.datetime.now() - datetime.timedelta(EXPIRE_DAYS)
+        return self.get_query_set().filter(date_invited__le=expiration)
+
 
 class Invitation(models.Model):
     user = models.ForeignKey(User, related_name='invitations')
