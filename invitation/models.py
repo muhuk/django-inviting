@@ -14,6 +14,8 @@ import signals
 
 
 def default_performance_calculator(invitation_stats):
+    """Calculates a performance score between ``0.0`` and ``1.0``.
+    """
     total = invitation_stats.available + invitation_stats.sent
     try:
         send_ratio = float(invitation_stats.sent) / total
@@ -32,8 +34,16 @@ class InvitationError(Exception):
 
 class InvitationManager(models.Manager):
     def invite(self, user, email):
+        """Gets or creates an invitation for ``email`` from ``user``.
+
+        This method doesn't an send email. You need to call ``send_email()``
+        method on returned ``Invitation`` instance.
+        """
         invitation = None
         try:
+            # It is possible that there is more than one invitation fitting
+            # the criteria. Normally this means some older invitations are
+            # expired or an email is invited consequtively.
             invitation = self.filter(user=user, email=email)[0]
             if not invitation.is_valid():
                 invitation = None
@@ -51,6 +61,12 @@ class InvitationManager(models.Manager):
     invite.alters_data = True
 
     def find(self, invitation_key):
+        """Finds a valid invitation for the given key or raise
+        ``Invitation.DoesNotExist``.
+
+        This function always returns a valid invitation. If an invitation is
+        found but not valid it will be automatically deleted.
+        """
         try:
             invitation = self.filter(key=invitation_key)[0]
         except IndexError:
@@ -61,6 +77,8 @@ class InvitationManager(models.Manager):
         return invitation
 
     def valid(self):
+        """Filter valid invitations.
+        """
         expiration = datetime.datetime.now() - datetime.timedelta(EXPIRE_DAYS)
         return self.get_query_set().filter(date_invited__gte=expiration)
 
@@ -95,14 +113,41 @@ class Invitation(models.Model):
         return self.date_invited + datetime.timedelta(EXPIRE_DAYS)
 
     def is_valid(self):
+        """
+        Returns ``True`` if the invitation is still valid, ``False`` otherwise.
+        """
         return datetime.datetime.now() < self._expires_at
 
     def expiration_date(self):
+        """Returns a ``datetime.date()`` object representing expiration date.
+        """
         return self._expires_at.date()
     expiration_date.short_description = _(u'expiration date')
     expiration_date.admin_order_field = 'date_invited'
 
     def send_email(self, email=None, site=None):
+        """Sends invitation email.
+
+        Both ``email`` and ``site`` parameters are optional. If not supplied
+        instance's ``email`` field and current site will be used.
+
+        Templates used:
+
+        ``invitation/invitation_email_subject.txt``
+          Template used to render the email subject. Takes the following context:
+
+          :invitation: ``Invitation`` instance ``send_email`` is called on.
+          :site: ``Site`` instance to be used.
+
+        ``invitation/invitation_email.txt``
+          Template used to render the email body. Takes the following context:
+
+          :invitation: ``Invitation`` instance ``send_email`` is called on.
+          :expiration_days: ``INVITATION_EXPIRE_DAYS`` setting.
+          :site: ``Site`` instance to be used.
+
+        Sends ``invitation.signals.invitation_sent`` on completion.
+        """
         email = email or self.email
         site = site or Site.objects.get_current()
         subject = render_to_string('invitation/invitation_email_subject.txt',
@@ -117,6 +162,10 @@ class Invitation(models.Model):
         signals.invitation_sent.send(sender=self)
 
     def mark_accepted(self, new_user):
+        """Updates sender's invitation statistics and delete self.
+
+        Sends ``invitation.signals.invitation_accepted`` just before deletion.
+        """
         self.user.invitation_stats.mark_accepted()
         signals.invitation_accepted.send(sender=self,
                                          inviting_user=self.user,
@@ -155,6 +204,8 @@ class InvitationStatsManager(models.Manager):
 
 
 class InvitationStats(models.Model):
+    """Stores invitation statistics for ``user``.
+    """
     user = models.OneToOneField(User,
                                 related_name='invitation_stats')
     available = models.IntegerField(_(u'available invitations'),
@@ -179,12 +230,31 @@ class InvitationStats(models.Model):
         return default_performance_calculator(self)
 
     def add_available(self, count=1):
+        """Adds usable invitations.
+
+        Parameters:
+
+        count
+          Optional. Number of invitations to add. Default is ``1``.
+
+        Sends ``invitation.signals.invitation_added`` just after completion.
+        """
         self.available = models.F('available') + count
         self.save()
         signals.invitation_added.send(sender=self, user=self.user, count=count)
     add_available.alters_data = True
 
     def use(self, count=1):
+        """Marks invitations used.
+
+        Raises ``InvitationError`` if ``INVITATION_INVITE_ONLY`` is True and
+        ``count`` is more than available invitations.
+
+        Parameters:
+
+        count
+          Optional. Number of invitations to mark used. Default is ``1``.
+        """
         if getattr(settings, 'INVITE_ONLY', False):
             if self.available - count >= 0:
                 self.available = models.F('available') - count
@@ -195,6 +265,16 @@ class InvitationStats(models.Model):
     use.alters_data = True
 
     def mark_accepted(self, count=1):
+        """Marks invitations accepted.
+
+        Raises ``InvitationError`` if more invitations than possible is
+        being accepted.
+
+        Parameters:
+
+        count
+          Optional. Number of invitations to mark accepted. Default is ``1``.
+        """
         if self.accepted + count > self.sent:
             raise InvitationError('There can\'t be more accepted ' \
                                   'invitations than sent invitations.')

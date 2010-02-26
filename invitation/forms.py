@@ -4,6 +4,13 @@ from registration.forms import RegistrationForm
 
 
 def save_user(form_instance, profile_callback=None):
+    """Creates a new **active** user from form data.
+
+    This method is intended to replace the ``save`` of
+    ``django-registration``s ``RegistrationForm``. Calls
+    ``profile_callback`` if provided. Required form fields
+    are ``username``, ``email`` and ``password1``.
+    """
     username = form_instance.cleaned_data['username']
     email = form_instance.cleaned_data['email']
     password = form_instance.cleaned_data['password1']
@@ -19,4 +26,7 @@ class InvitationForm(forms.Form):
 
 
 class RegistrationFormInvitation(RegistrationForm):
+    """
+    Subclass of ``registration.RegistrationForm`` that creates an active user.
+    """
     save = save_user
