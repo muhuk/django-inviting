@@ -4,4 +4,5 @@
 cache/
 *.kdevelop
 *.kdevses
+*.egg-info
 MANIFEST
