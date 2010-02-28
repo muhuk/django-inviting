@@ -3,9 +3,9 @@ from invitation import __version__, __maintainer__, __email__
 
 
 setup(
-    name = 'django-invitation',
+    name = 'django-inviting',
     version = __version__,
-    url = 'http://github.com/muhuk/django-invitation',
+    url = 'http://github.com/muhuk/django-inviting',
     author = __maintainer__.encode('utf8'),
     author_email = __email__,
     license = open('LICENSE.txt').read(),
