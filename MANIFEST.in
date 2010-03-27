@@ -1,3 +1,5 @@
 include README.rst
 include LICENSE.txt
+recursive-include invitation/locale/*/LC_MESSAGES *.po *.mo
 recursive-include invitation/templates *.html
+recursive-include invitation/tests/templates *.html
