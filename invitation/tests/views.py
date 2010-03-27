@@ -84,9 +84,13 @@ class RegistrationTestCase(BaseTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response,
                                 'registration/registration_form.html')
+        self.assertContains(response, invitation.email)
+        # We are posting a different email than the
+        # invitation.email but the form should just
+        # ignore it and register with invitation.email
         response = self.client.post(register_url,
                                     {'username': u'friend',
-                                     'email': u'friend@example.com',
+                                     'email': u'noone@example.com',
                                      'password1': u'friend',
                                      'password2': u'friend'})
         self.assertRedirects(response, reverse('invitation_registered'))

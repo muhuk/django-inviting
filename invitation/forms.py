@@ -29,4 +29,14 @@ class RegistrationFormInvitation(RegistrationForm):
     """
     Subclass of ``registration.RegistrationForm`` that creates an active user.
     """
+    def __init__(self, email, *args, **kwargs):
+        super(RegistrationFormInvitation, self).__init__(*args, **kwargs)
+        self._email = self.initial['email'] = email
+        if 'email' in self.data:
+            self.data['email'] = email
+        self.fields['email'].widget.attrs.update({'readonly': True})
+
+    def clean_email(self):
+        return self._email
+
     save = save_user

@@ -54,14 +54,14 @@ def register(request,
                                   {'invitation_key': invitation_key},
                                   context_instance=RequestContext(request))
     if request.method == 'POST':
-        form = form_class(request.POST, request.FILES)
+        form = form_class(invitation.email, request.POST, request.FILES)
         if form.is_valid():
             new_user = form.save(profile_callback=profile_callback)
             invitation.mark_accepted(new_user)
             return HttpResponseRedirect(success_url or \
                                              reverse('invitation_registered'))
     else:
-        form = form_class()
+        form = form_class(invitation.email)
     if extra_context is None:
         extra_context = {}
     context = RequestContext(request)
