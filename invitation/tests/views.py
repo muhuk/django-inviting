@@ -3,26 +3,21 @@ from django.core import mail
 from django.contrib.auth.models import User
 from utils import BaseTestCase
 from invitation.models import Invitation
-from invitation import app_settings
 
 
-class InvitingTestCase(BaseTestCase):
-    def test_invitation(self):
-        self.client.login(username='testuser', password='testuser')
-        response = self.client.get(reverse('invitation_invite'))
+class InviteOnlyModeTestCase(BaseTestCase):
+    urls = 'invitation.tests.invite_only_urls'
+
+    def test_invation_mode(self):
+        # Normal registration view should redirect
+        response = self.client.get(reverse('registration_register'))
+        self.assertRedirects(response, reverse('invitation_invite_only'))
+        # But registration after invitation view should work
+        response = self.client.get(reverse('invitation_register',
+                                           args=('A' * 40,)))
         self.assertEqual(response.status_code, 200)
-        response = self.client.post(reverse('invitation_invite'),
-                                    {'email': 'friend@example.com'})
-        self.assertRedirects(response, reverse('invitation_complete'))
-        invitation_query = Invitation.objects.filter(user=self.user(),
-                                                   email='friend@example.com')
-        self.assertEqual(invitation_query.count(), 1)
-        self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(self.user().invitation_stats.sent, 1)
 
-    def test_invite_only_mode(self):
-        app_settings.INVITE_ONLY = True
-        self.reset_urlconf()
+    def test_invitation(self):
         available = self.user().invitation_stats.available
         self.client.login(username='testuser', password='testuser')
         response = self.client.post(reverse('invitation_invite'),
@@ -40,34 +35,6 @@ class InvitingTestCase(BaseTestCase):
                                     {'email': 'friend@example.com'})
         self.assertRedirects(response, reverse('invitation_unavailable'))
 
-
-class InvitationModeTestCase(BaseTestCase):
-    def test_invite_only_mode(self):
-        app_settings.INVITE_ONLY = True
-        self.reset_urlconf()
-        # Normal registration view should redirect
-        response = self.client.get(reverse('registration_register'))
-        self.assertRedirects(response, reverse('invitation_invite_only'))
-        # But registration after invitation view should work
-        response = self.client.get(reverse('invitation_register',
-                                           args=('A'*40,)))
-        self.assertEqual(response.status_code, 200)
-
-    def test_invite_optional_mode(self):
-        app_settings.INVITE_ONLY = False
-        self.reset_urlconf()
-        # Normal registration view should work
-        response = self.client.get(reverse('registration_register'))
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response,
-                                'registration/registration_register.html')
-        # So as registration after invitation view
-        response = self.client.get(reverse('invitation_register',
-                                           args=('A' * 40,)))
-        self.assertEqual(response.status_code, 200)
-
-
-class RegistrationTestCase(BaseTestCase):
     def test_registration(self):
         # Make sure error message is shown in
         # case of an invalid invitation key
@@ -102,3 +69,31 @@ class RegistrationTestCase(BaseTestCase):
                           Invitation.objects.get,
                           user=self.user(),
                           email='friend@example.com')
+
+
+class InviteOptionalModeTestCase(BaseTestCase):
+    urls = 'invitation.tests.invite_optional_urls'
+
+    def test_invation_mode(self):
+        # Normal registration view should work
+        response = self.client.get(reverse('registration_register'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response,
+                                'registration/registration_register.html')
+        # So as registration after invitation view
+        response = self.client.get(reverse('invitation_register',
+                                           args=('A' * 40,)))
+        self.assertEqual(response.status_code, 200)
+
+    def test_invitation(self):
+        self.client.login(username='testuser', password='testuser')
+        response = self.client.get(reverse('invitation_invite'))
+        self.assertEqual(response.status_code, 200)
+        response = self.client.post(reverse('invitation_invite'),
+                                    {'email': 'friend@example.com'})
+        self.assertRedirects(response, reverse('invitation_complete'))
+        invitation_query = Invitation.objects.filter(user=self.user(),
+                                                   email='friend@example.com')
+        self.assertEqual(invitation_query.count(), 1)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(self.user().invitation_stats.sent, 1)
