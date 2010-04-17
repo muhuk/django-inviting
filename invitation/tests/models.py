@@ -2,9 +2,14 @@ import datetime
 from django.core import mail
 from django.contrib.auth.models import User
 from utils import BaseTestCase
-from invitation.app_settings import EXPIRE_DAYS, INITIAL_INVITATIONS
+from invitation import app_settings
 from invitation.models import InvitationError, Invitation, InvitationStats
-from invitation.models import default_performance_calculator
+from invitation.models import performance_calculator_invite_only
+from invitation.models import performance_calculator_invite_optional
+
+
+EXPIRE_DAYS = app_settings.EXPIRE_DAYS
+INITIAL_INVITATIONS = app_settings.INITIAL_INVITATIONS
 
 
 class InvitationTestCase(BaseTestCase):
@@ -70,7 +75,7 @@ class InvitationTestCase(BaseTestCase):
                           Invitation.objects.find, '')
 
 
-class InvitationStatsTestCase(BaseTestCase):
+class InvitationStatsBaseTestCase(BaseTestCase):
     def stats(self, user=None):
         user = user or self.user()
         return (user.invitation_stats.available,
@@ -83,14 +88,19 @@ class InvitationStatsTestCase(BaseTestCase):
             self.sent = sent
             self.accepted = accepted
 
-    def test_default_performance_func(self):
-        self.assertAlmostEqual(default_performance_calculator(
-                                     self.MockInvitationStats(5, 5, 1)), 0.42)
-        self.assertAlmostEqual(default_performance_calculator(
-                                     self.MockInvitationStats(0, 10, 10)), 1.0)
-        self.assertAlmostEqual(default_performance_calculator(
-                                     self.MockInvitationStats(10, 0, 0)), 0.0)
 
+class InvitationStatsInviteOnlyTestCase(InvitationStatsBaseTestCase):
+    def setUp(self):
+        super(InvitationStatsInviteOnlyTestCase, self).setUp()
+        app_settings.INVITE_ONLY = True
+
+    def test_default_performance_func(self):
+        self.assertAlmostEqual(performance_calculator_invite_only(
+                                     self.MockInvitationStats(5, 5, 1)), 0.42)
+        self.assertAlmostEqual(performance_calculator_invite_only(
+                                     self.MockInvitationStats(0, 10, 10)), 1.0)
+        self.assertAlmostEqual(performance_calculator_invite_only(
+                                     self.MockInvitationStats(10, 0, 0)), 0.0)
 
     def test_add_available(self):
         self.assertEqual(self.stats(), (INITIAL_INVITATIONS, 0, 0))
@@ -100,8 +110,6 @@ class InvitationStatsTestCase(BaseTestCase):
         self.assertEqual(self.stats(), (INITIAL_INVITATIONS + 11, 0, 0))
 
     def test_use(self):
-        self.settings_manager.set(INVITATION_INVITE_ONLY=True)
-        self.reset_urlconf()
         self.user().invitation_stats.add_available(10)
         self.assertEqual(self.stats(), (INITIAL_INVITATIONS + 10, 0, 0))
         self.user().invitation_stats.use()
@@ -147,3 +155,61 @@ class InvitationStatsTestCase(BaseTestCase):
         invitation_stats = self.user().invitation_stats
         self.assertEqual(invitation_stats.performance > 0.5, True)
         self.assertEqual(invitation_stats.available, INITIAL_INVITATIONS)
+
+
+class InvitationStatsInviteOptionalTestCase(InvitationStatsBaseTestCase):
+    def setUp(self):
+        super(InvitationStatsInviteOptionalTestCase, self).setUp()
+        app_settings.INVITE_ONLY = False
+
+    def test_default_performance_func(self):
+        self.assertAlmostEqual(performance_calculator_invite_optional(
+                                     self.MockInvitationStats(5, 5, 1)), 0.2)
+        self.assertAlmostEqual(performance_calculator_invite_optional(
+                                     self.MockInvitationStats(20, 5, 1)), 0.2)
+        self.assertAlmostEqual(performance_calculator_invite_optional(
+                                     self.MockInvitationStats(0, 5, 1)), 0.2)
+        self.assertAlmostEqual(performance_calculator_invite_optional(
+                                     self.MockInvitationStats(0, 10, 10)), 1.0)
+        self.assertAlmostEqual(performance_calculator_invite_optional(
+                                     self.MockInvitationStats(10, 0, 0)), 0.0)
+
+    def test_use(self):
+        self.assertEqual(self.stats(), (INITIAL_INVITATIONS, 0, 0))
+        self.user().invitation_stats.use()
+        self.assertEqual(self.stats(), (INITIAL_INVITATIONS, 1, 0))
+        self.user().invitation_stats.use(5)
+        self.assertEqual(self.stats(), (INITIAL_INVITATIONS, 6, 0))
+        self.user().invitation_stats.use(INITIAL_INVITATIONS + 5)
+        self.assertEqual(self.stats(), (INITIAL_INVITATIONS,
+                                        INITIAL_INVITATIONS + 11,
+                                        0))
+
+    def test_mark_accepted(self):
+        if INITIAL_INVITATIONS < 10:
+            i = 10
+            self.user().invitation_stats.add_available(10-INITIAL_INVITATIONS)
+        else:
+            i = INITIAL_INVITATIONS
+        self.user().invitation_stats.use(i)
+        self.user().invitation_stats.mark_accepted()
+        self.assertEqual(self.stats(), (i, i, 1))
+        self.user().invitation_stats.mark_accepted(5)
+        self.assertEqual(self.stats(), (i, i, 6))
+        self.assertRaises(InvitationError,
+                          self.user().invitation_stats.mark_accepted, i)
+        self.user().invitation_stats.mark_accepted(4)
+        self.assertEqual(self.stats(), (i, i, 10))
+
+    def test_reward(self):
+        self.assertAlmostEqual(self.user().invitation_stats.performance, 0.0)
+        InvitationStats.objects.reward()
+        self.assertEqual(self.user().invitation_stats.available,
+                         INITIAL_INVITATIONS)
+        self.user().invitation_stats.use(INITIAL_INVITATIONS)
+        self.user().invitation_stats.mark_accepted(INITIAL_INVITATIONS)
+        InvitationStats.objects.reward()
+        invitation_stats = self.user().invitation_stats
+        self.assertEqual(
+            invitation_stats.performance > app_settings.REWARD_THRESHOLD, True)
+        self.assertEqual(invitation_stats.available, INITIAL_INVITATIONS * 2)

@@ -8,24 +8,35 @@ from django.utils.translation import ugettext_lazy as _
 from django.utils.hashcompat import sha_constructor
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
-from app_settings import PERFORMANCE_FUNC, REWARD_THRESHOLD
-from app_settings import INVITE_ONLY, EXPIRE_DAYS, INITIAL_INVITATIONS
+import app_settings
 import signals
 
 
-def default_performance_calculator(invitation_stats):
+def performance_calculator_invite_only(invitation_stats):
     """Calculates a performance score between ``0.0`` and ``1.0``.
     """
-    total = invitation_stats.available + invitation_stats.sent
+    if app_settings.INVITE_ONLY:
+        total = invitation_stats.available + invitation_stats.sent
     try:
         send_ratio = float(invitation_stats.sent) / total
     except ZeroDivisionError:
         send_ratio = 0.0
+    accept_ratio = performance_calculator_invite_optional(invitation_stats)
+    return min((send_ratio + accept_ratio) * 0.6, 1.0)
+
+
+def performance_calculator_invite_optional(invitation_stats):
     try:
         accept_ratio = float(invitation_stats.accepted) / invitation_stats.sent
+        return min(accept_ratio, 1.0)
     except ZeroDivisionError:
-        accept_ratio = 0.0
-    return min((send_ratio + accept_ratio) * 0.6, 1.0)
+        return 0.0
+
+
+DEFAULT_PERFORMANCE_CALCULATORS = {
+    True: performance_calculator_invite_only,
+    False: performance_calculator_invite_optional,
+}
 
 
 class InvitationError(Exception):
@@ -79,13 +90,15 @@ class InvitationManager(models.Manager):
     def valid(self):
         """Filter valid invitations.
         """
-        expiration = datetime.datetime.now() - datetime.timedelta(EXPIRE_DAYS)
+        expiration = datetime.datetime.now() - datetime.timedelta(
+                                                     app_settings.EXPIRE_DAYS)
         return self.get_query_set().filter(date_invited__gte=expiration)
 
     def invalid(self):
         """Filter invalid invitation.
         """
-        expiration = datetime.datetime.now() - datetime.timedelta(EXPIRE_DAYS)
+        expiration = datetime.datetime.now() - datetime.timedelta(
+                                                     app_settings.EXPIRE_DAYS)
         return self.get_query_set().filter(date_invited__le=expiration)
 
 
@@ -116,7 +129,7 @@ class Invitation(models.Model):
 
     @property
     def _expires_at(self):
-        return self.date_invited + datetime.timedelta(EXPIRE_DAYS)
+        return self.date_invited + datetime.timedelta(app_settings.EXPIRE_DAYS)
 
     def is_valid(self):
         """
@@ -163,7 +176,7 @@ class Invitation(models.Model):
         subject = ''.join(subject.splitlines())
         message = render_to_string('invitation/invitation_email.txt',
                                    {'invitation': self,
-                                    'expiration_days': EXPIRE_DAYS,
+                                    'expiration_days':app_settings.EXPIRE_DAYS,
                                     'site': site})
         send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email])
         signals.invitation_sent.send(sender=self)
@@ -202,9 +215,10 @@ class InvitationStatsManager(models.Manager):
                 invitations_given += c
         return rewarded_users, invitations_given
 
-    def reward(self, user=None, reward_count=INITIAL_INVITATIONS):
+    def reward(self, user=None, reward_count=app_settings.INITIAL_INVITATIONS):
         def count(user):
-            if user.invitation_stats.performance >= REWARD_THRESHOLD:
+            if user.invitation_stats.performance >= \
+                                                app_settings.REWARD_THRESHOLD:
                 return reward_count
             return 0
         return self.give_invitations(user, count)
@@ -216,7 +230,7 @@ class InvitationStats(models.Model):
     user = models.OneToOneField(User,
                                 related_name='invitation_stats')
     available = models.IntegerField(_(u'available invitations'),
-                                    default=INITIAL_INVITATIONS)
+                                    default=app_settings.INITIAL_INVITATIONS)
     sent = models.IntegerField(_(u'invitations sent'), default=0)
     accepted = models.IntegerField(_(u'invitations accepted'), default=0)
 
@@ -232,9 +246,9 @@ class InvitationStats(models.Model):
 
     @property
     def performance(self):
-        if PERFORMANCE_FUNC:
-            return PERFORMANCE_FUNC(self)
-        return default_performance_calculator(self)
+        if app_settings.PERFORMANCE_FUNC:
+            return app_settings.PERFORMANCE_FUNC(self)
+        return DEFAULT_PERFORMANCE_CALCULATORS[app_settings.INVITE_ONLY](self)
 
     def add_available(self, count=1):
         """Adds usable invitations.
@@ -262,7 +276,7 @@ class InvitationStats(models.Model):
         count
           Optional. Number of invitations to mark used. Default is ``1``.
         """
-        if INVITE_ONLY:
+        if app_settings.INVITE_ONLY:
             if self.available - count >= 0:
                 self.available = models.F('available') - count
             else:
