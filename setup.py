@@ -1,10 +1,14 @@
 import os
 from distutils.core import setup
-from django.core.management.commands.compilemessages import compile_messages
 from invitation import __version__, __maintainer__, __email__
 
 
 def compile_translations():
+    try:
+        from django.core.management.commands.compilemessages \
+                                                       import compile_messages
+    except ImportError:
+        return None
     curdir = os.getcwdu()
     os.chdir(os.path.join(os.path.dirname(__file__), 'invitation'))
     compile_messages()
@@ -26,9 +30,11 @@ setup(
     packages = ['invitation',
                 'invitation.tests',
                 'invitation.templatetags'],
-    package_data= {'invitation': ['templates/*',
-                                  'tests/templates/*'
-                                  'locale/*/LC_MESSAGES/django.*']},
+    package_data= {'invitation': [
+                            'templates/admin/invitation/invitationstats/*',
+                            'tests/templates/invitations/*',
+                            'tests/templates/registration/*',
+                            'locale/*/LC_MESSAGES/django.*' ]},
     data_files=[('', ['LICENSE.txt',
                       'README.rst'])],
     description = 'Registration through invitations',
