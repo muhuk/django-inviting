@@ -13,7 +13,7 @@ import signals
 
 
 def performance_calculator_invite_only(invitation_stats):
-    """Calculates a performance score between ``0.0`` and ``1.0``.
+    """Calculate a performance score between ``0.0`` and ``1.0``.
     """
     if app_settings.INVITE_ONLY:
         total = invitation_stats.available + invitation_stats.sent
@@ -45,7 +45,8 @@ class InvitationError(Exception):
 
 class InvitationManager(models.Manager):
     def invite(self, user, email):
-        """Gets or creates an invitation for ``email`` from ``user``.
+        """
+        Get or create an invitation for ``email`` from ``user``.
 
         This method doesn't an send email. You need to call ``send_email()``
         method on returned ``Invitation`` instance.
@@ -72,7 +73,8 @@ class InvitationManager(models.Manager):
     invite.alters_data = True
 
     def find(self, invitation_key):
-        """Finds a valid invitation for the given key or raise
+        """
+        Find a valid invitation for the given key or raise
         ``Invitation.DoesNotExist``.
 
         This function always returns a valid invitation. If an invitation is
@@ -133,40 +135,46 @@ class Invitation(models.Model):
 
     def is_valid(self):
         """
-        Returns ``True`` if the invitation is still valid, ``False`` otherwise.
+        Return ``True`` if the invitation is still valid, ``False`` otherwise.
         """
         return datetime.datetime.now() < self._expires_at
 
     def expiration_date(self):
-        """Returns a ``datetime.date()`` object representing expiration date.
+        """Return a ``datetime.date()`` object representing expiration date.
         """
         return self._expires_at.date()
     expiration_date.short_description = _(u'expiration date')
     expiration_date.admin_order_field = 'date_invited'
 
     def send_email(self, email=None, site=None):
-        """Sends invitation email.
+        """
+        Send invitation email.
 
         Both ``email`` and ``site`` parameters are optional. If not supplied
         instance's ``email`` field and current site will be used.
 
-        Templates used:
+        **Templates:**
 
-        ``invitation/invitation_email_subject.txt``
-          Template used to render the email subject.
-          Takes the following context:
+        :invitation/invitation_email_subject.txt:
+            Template used to render the email subject.
 
-          :invitation: ``Invitation`` instance ``send_email`` is called on.
-          :site: ``Site`` instance to be used.
+            **Context:**
 
-        ``invitation/invitation_email.txt``
-          Template used to render the email body. Takes the following context:
+            :invitation: ``Invitation`` instance ``send_email`` is called on.
+            :site: ``Site`` instance to be used.
 
-          :invitation: ``Invitation`` instance ``send_email`` is called on.
-          :expiration_days: ``INVITATION_EXPIRE_DAYS`` setting.
-          :site: ``Site`` instance to be used.
+        :invitation/invitation_email.txt:
+            Template used to render the email body.
 
-        Sends ``invitation.signals.invitation_sent`` on completion.
+            **Context:**
+
+            :invitation: ``Invitation`` instance ``send_email`` is called on.
+            :expiration_days: ``INVITATION_EXPIRE_DAYS`` setting.
+            :site: ``Site`` instance to be used.
+
+        **Signals:**
+
+        ``invitation.signals.invitation_sent`` is sent on completion.
         """
         email = email or self.email
         site = site or Site.objects.get_current()
@@ -174,17 +182,20 @@ class Invitation(models.Model):
                                    {'invitation': self, 'site': site})
         # Email subject *must not* contain newlines
         subject = ''.join(subject.splitlines())
-        message = render_to_string('invitation/invitation_email.txt',
-                                   {'invitation': self,
-                                    'expiration_days':app_settings.EXPIRE_DAYS,
-                                    'site': site})
+        message = render_to_string('invitation/invitation_email.txt', {
+            'invitation': self,
+            'expiration_days': app_settings.EXPIRE_DAYS,
+            'site': site
+        })
         send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email])
         signals.invitation_sent.send(sender=self)
 
     def mark_accepted(self, new_user):
-        """Updates sender's invitation statistics and delete self.
+        """
+        Update sender's invitation statistics and delete self.
 
-        Sends ``invitation.signals.invitation_accepted`` just before deletion.
+        ``invitation.signals.invitation_accepted`` is sent just before the
+        instance is deleted.
         """
         self.user.invitation_stats.mark_accepted()
         signals.invitation_accepted.send(sender=self,
@@ -225,7 +236,7 @@ class InvitationStatsManager(models.Manager):
 
 
 class InvitationStats(models.Model):
-    """Stores invitation statistics for ``user``.
+    """Store invitation statistics for ``user``.
     """
     user = models.OneToOneField(User,
                                 related_name='invitation_stats')
@@ -251,14 +262,15 @@ class InvitationStats(models.Model):
         return DEFAULT_PERFORMANCE_CALCULATORS[app_settings.INVITE_ONLY](self)
 
     def add_available(self, count=1):
-        """Adds usable invitations.
+        """
+        Add usable invitations.
 
-        Parameters:
+        **Optional arguments:**
 
-        count
-          Optional. Number of invitations to add. Default is ``1``.
+        :count:
+            Number of invitations to add. Default is ``1``.
 
-        Sends ``invitation.signals.invitation_added`` just after completion.
+        ``invitation.signals.invitation_added`` is sent at the end.
         """
         self.available = models.F('available') + count
         self.save()
@@ -266,15 +278,16 @@ class InvitationStats(models.Model):
     add_available.alters_data = True
 
     def use(self, count=1):
-        """Marks invitations used.
+        """
+        Mark invitations used.
 
-        Raises ``InvitationError`` if ``INVITATION_INVITE_ONLY`` is True and
+        Raises ``InvitationError`` if ``INVITATION_INVITE_ONLY`` is True or
         ``count`` is more than available invitations.
 
-        Parameters:
+        **Optional arguments:**
 
-        count
-          Optional. Number of invitations to mark used. Default is ``1``.
+        :count:
+            Number of invitations to mark used. Default is ``1``.
         """
         if app_settings.INVITE_ONLY:
             if self.available - count >= 0:
@@ -286,15 +299,16 @@ class InvitationStats(models.Model):
     use.alters_data = True
 
     def mark_accepted(self, count=1):
-        """Marks invitations accepted.
+        """
+        Mark invitations accepted.
 
         Raises ``InvitationError`` if more invitations than possible is
         being accepted.
 
-        Parameters:
+        **Optional arguments:**
 
-        count
-          Optional. Number of invitations to mark accepted. Default is ``1``.
+        :count:
+            Optional. Number of invitations to mark accepted. Default is ``1``.
         """
         if self.accepted + count > self.sent:
             raise InvitationError('There can\'t be more accepted ' \

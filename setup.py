@@ -30,11 +30,12 @@ setup(
     packages = ['invitation',
                 'invitation.tests',
                 'invitation.templatetags'],
-    package_data= {'invitation': [
-                            'templates/admin/invitation/invitationstats/*',
-                            'tests/templates/invitations/*',
-                            'tests/templates/registration/*',
-                            'locale/*/LC_MESSAGES/django.*' ]},
+    package_data= {
+        'invitation': ['templates/admin/invitation/invitationstats/*',
+                       'tests/templates/invitations/*',
+                       'tests/templates/registration/*',
+                       'locale/*/LC_MESSAGES/django.*']
+    },
     data_files=[('', ['LICENSE.txt',
                       'README.rst'])],
     description = 'Registration through invitations',
