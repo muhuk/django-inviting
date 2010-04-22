@@ -4,7 +4,8 @@ from registration.forms import RegistrationForm
 
 
 def save_user(form_instance, profile_callback=None):
-    """Creates a new **active** user from form data.
+    """
+    Create a new **active** user from form data.
 
     This method is intended to replace the ``save`` of
     ``django-registration``s ``RegistrationForm``. Calls
@@ -27,7 +28,12 @@ class InvitationForm(forms.Form):
 
 class RegistrationFormInvitation(RegistrationForm):
     """
-    Subclass of ``registration.RegistrationForm`` that creates an active user.
+    Subclass of ``registration.RegistrationForm`` that create an **active**
+    user.
+
+    Since registration is (supposedly) done via invitation, no further
+    activation is required. For this reason ``email`` field always return
+    the value of ``email`` argument given the constructor.
     """
     def __init__(self, email, *args, **kwargs):
         super(RegistrationFormInvitation, self).__init__(*args, **kwargs)

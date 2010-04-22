@@ -121,8 +121,8 @@ def register(request,
         ``None``, ``invitation_registered`` will be resolved in this case.
 
     :form_class:
-        A form class to use for registration. Takes ``Invitation`` instance
-        as first argument to its constructor.
+        A form class to use for registration. Takes the invited email as first
+        argument to its constructor.
 
     :profile_callback:
         A function which will be used to create a site-specific
