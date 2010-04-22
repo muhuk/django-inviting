@@ -9,10 +9,19 @@ from models import InvitationError, Invitation, InvitationStats
 from forms import InvitationForm, RegistrationFormInvitation
 
 
+def apply_extra_context(context, extra_context=None):
+    if extra_context is None:
+        extra_context = {}
+    for key, value in extra_context.items():
+        context[key] = callable(value) and value() or value
+    return context
+
+
 @login_required
 def invite(request, success_url=None,
            form_class=InvitationForm,
-           template_name='invitation/invitation_form.html'):
+           template_name='invitation/invitation_form.html',
+           extra_context=None):
     """
     Create an invitation and send invitation email.
 
@@ -39,6 +48,11 @@ def invite(request, success_url=None,
         A custom template to use. Default value is
         ``invitation/invitation_form.html``.
 
+    :extra_context:
+        A dictionary of variables to add to the template context. Any
+        callable object in this dictionary will be called to produce
+        the end result which appears in the context.
+
     **Template:**
 
     ``invitation/invitation_form.html`` or ``template_name`` keyword
@@ -46,7 +60,8 @@ def invite(request, success_url=None,
 
     **Context:**
 
-    A ``RequestContext`` instance.
+    A ``RequestContext`` instance is used rendering the template. Context,
+    in addition to ``extra_context``, contains:
 
     :form:
         The invitation form.
@@ -64,9 +79,10 @@ def invite(request, success_url=None,
                                                reverse('invitation_complete'))
     else:
         form = form_class()
+    context = apply_extra_context(RequestContext(request), extra_context)
     return render_to_response(template_name,
                               {'form': form},
-                              context_instance=RequestContext(request))
+                              context_instance=context)
 
 
 def register(request,
@@ -121,20 +137,6 @@ def register(request,
         callable object in this dictionary will be called to produce
         the end result which appears in the context.
 
-    **Context:**
-
-    ``RequestContext`` instances are used for both templates.
-
-    Following items, other than what is in ``extra_context``, are supplied
-    to the templates:
-
-    For wrong key template
-        :invitation_key: supplied invitation key
-
-    For main template
-        :form:
-            The registration form.
-
     **Templates:**
 
     ``invitation/invitation_form.html`` or ``template_name`` keyword
@@ -142,15 +144,28 @@ def register(request,
 
     ``invitation/wrong_invitation_key.html`` or ``wrong_key_template`` keyword
     argument as the *wrong key template*.
+
+    **Context:**
+
+    ``RequestContext`` instances are used rendering both templates. Context,
+    in addition to ``extra_context``, contains:
+
+    For wrong key template
+        :invitation_key: supplied invitation key
+
+    For main template
+        :form:
+            The registration form.
     """
     if request.user.is_authenticated():
         return HttpResponseRedirect(redirect_to_if_authenticated)
     try:
         invitation = Invitation.objects.find(invitation_key)
     except Invitation.DoesNotExist:
+        context = apply_extra_context(RequestContext(request), extra_context)
         return render_to_response(wrong_key_template,
                                   {'invitation_key': invitation_key},
-                                  context_instance=RequestContext(request))
+                                  context_instance=context)
     if request.method == 'POST':
         form = form_class(invitation.email, request.POST, request.FILES)
         if form.is_valid():
@@ -160,11 +175,7 @@ def register(request,
                                              reverse('invitation_registered'))
     else:
         form = form_class(invitation.email)
-    if extra_context is None:
-        extra_context = {}
-    context = RequestContext(request)
-    for key, value in extra_context.items():
-        context[key] = callable(value) and value() or value
+    context = apply_extra_context(RequestContext(request), extra_context)
     return render_to_response(template_name,
                               {'form': form},
                               context_instance=context)
