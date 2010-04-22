@@ -5,7 +5,6 @@ from django.shortcuts import render_to_response
 from django.utils.translation import ugettext
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
-from django.contrib.sites.models import Site, RequestSite
 from models import InvitationError, Invitation, InvitationStats
 from forms import InvitationForm, RegistrationFormInvitation
 
@@ -60,11 +59,7 @@ def invite(request, success_url=None,
                                      request.user, form.cleaned_data["email"])
             except InvitationError:
                 return HttpResponseRedirect(reverse('invitation_unavailable'))
-            if Site._meta.installed:
-                current_site = Site.objects.get_current()
-            else:
-                current_site = RequestSite(request)
-            invitation.send_email(site=current_site)
+            invitation.send_email()
             return HttpResponseRedirect(success_url or \
                                                reverse('invitation_complete'))
     else:
