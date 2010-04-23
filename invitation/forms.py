@@ -37,8 +37,12 @@ class RegistrationFormInvitation(RegistrationForm):
     """
     def __init__(self, email, *args, **kwargs):
         super(RegistrationFormInvitation, self).__init__(*args, **kwargs)
+        self._make_email_immutable(email)
+
+    def _make_email_immutable(self, email):
         self._email = self.initial['email'] = email
         if 'email' in self.data:
+            self.data = self.data.copy()
             self.data['email'] = email
         self.fields['email'].widget.attrs.update({'readonly': True})
 
