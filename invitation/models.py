@@ -7,7 +7,7 @@ from django.template.loader import render_to_string
 from django.utils.translation import ugettext_lazy as _
 from django.utils.hashcompat import sha_constructor
 from django.contrib.auth.models import User
-from django.contrib.sites.models import Site
+from django.contrib.sites.models import Site, RequestSite
 import app_settings
 import signals
 
@@ -146,7 +146,7 @@ class Invitation(models.Model):
     expiration_date.short_description = _(u'expiration date')
     expiration_date.admin_order_field = 'date_invited'
 
-    def send_email(self, email=None, site=None):
+    def send_email(self, email=None, site=None, request=None):
         """
         Send invitation email.
 
@@ -177,7 +177,11 @@ class Invitation(models.Model):
         ``invitation.signals.invitation_sent`` is sent on completion.
         """
         email = email or self.email
-        site = site or Site.objects.get_current()
+        if site is None:
+            if Site._meta.installed:
+                site = Site.objects.get_current()
+            elif request is not None:
+                site = RequestSite(request)
         subject = render_to_string('invitation/invitation_email_subject.txt',
                                    {'invitation': self, 'site': site})
         # Email subject *must not* contain newlines
