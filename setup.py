@@ -1,4 +1,5 @@
 import os
+import sys
 from distutils.core import setup
 from invitation import __version__, __maintainer__, __email__
 
@@ -11,7 +12,11 @@ def compile_translations():
         return None
     curdir = os.getcwdu()
     os.chdir(os.path.join(os.path.dirname(__file__), 'invitation'))
-    compile_messages()
+    try:
+        compile_messages(stderr=sys.stderr)
+    except TypeError:
+        # compile_messages doesn't accept stderr parameter prior to 1.2.4
+        compile_messages()
     os.chdir(curdir)
 compile_translations()
 
