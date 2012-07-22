@@ -7,6 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from models import InvitationError, Invitation, InvitationStats
 from forms import InvitationForm, RegistrationFormInvitation
+from registration.signals import user_registered
 
 
 def apply_extra_context(context, extra_context=None):
@@ -91,7 +92,6 @@ def register(request,
              redirect_to_if_authenticated='/',
              success_url=None,
              form_class=RegistrationFormInvitation,
-             profile_callback=None,
              template_name='registration/registration_form.html',
              extra_context=None):
     """
@@ -99,7 +99,8 @@ def register(request,
 
     Send invitation email and then redirect to success URL if the
     invitation form is valid. Redirect named URL ``invitation_unavailable``
-    on InvitationError. Render invitation form template otherwise.
+    on InvitationError. Render invitation form template otherwise. Sends
+    registration.signals.user_registered after creating the user.
 
     **Required arguments:**
 
@@ -123,10 +124,6 @@ def register(request,
     :form_class:
         A form class to use for registration. Takes the invited email as first
         argument to its constructor.
-
-    :profile_callback:
-        A function which will be used to create a site-specific
-        profile instance for the new ``User``.
 
     :template_name:
         A custom template to use. Default value is
@@ -169,8 +166,11 @@ def register(request,
     if request.method == 'POST':
         form = form_class(invitation.email, request.POST, request.FILES)
         if form.is_valid():
-            new_user = form.save(profile_callback=profile_callback)
+            new_user = form.save()
             invitation.mark_accepted(new_user)
+            user_registered.send(sender="invitation",
+                                 user=new_user,
+                                 request=request)
             return HttpResponseRedirect(success_url or \
                                              reverse('invitation_registered'))
     else:
