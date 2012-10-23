@@ -1,9 +1,6 @@
 Built on top of ``django-registration``, **django-inviting** handles registration through invitations.
 
 
-|Flattr Button|_
-
-
 Features
 ========
 
@@ -66,8 +63,3 @@ See Also
 
 -  `django-invitation <http://code.welldev.org/django-invitation/>`_
 -  `django-invite <http://bitbucket.org/lorien/django-invite/>`_
-
-
-.. |Flattr Button| image:: http://api.flattr.com/button/flattr-badge-large.png
-.. _Flattr Button: https://flattr.com/submit/auto?user_id=muhuk&url=https://github.com/muhuk/django-inviting&title=django-inviting&language=&tags=github&category=software
-
