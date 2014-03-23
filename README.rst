@@ -1,3 +1,7 @@
+
+.. attention:: This package is no longer maintained.
+
+
 Built on top of ``django-registration``, **django-inviting** handles registration through invitations.
 
 
